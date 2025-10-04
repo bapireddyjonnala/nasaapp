@@ -1,0 +1,304 @@
+/* ==========================================
+   Ocean Time Machine VR - Styles
+   ========================================== */
+
+/* Global Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+}
+
+/* ==========================================
+   Loading Screen
+   ========================================== */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #001f3f 0%, #003d5c 50%, #001a33 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+
+#loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loading-content {
+    text-align: center;
+    max-width: 500px;
+    padding: 2rem;
+}
+
+.loading-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #00D9FF;
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+}
+
+.loading-content p {
+    font-size: 1.2rem;
+    color: #A0C4D9;
+    margin-bottom: 2rem;
+}
+
+.ocean-wave {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 2rem;
+    border: 4px solid #00D9FF;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: wave-spin 1.5s linear infinite;
+}
+
+@keyframes wave-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00D9FF, #0077FF);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.8);
+}
+
+/* ==========================================
+   UI Overlay
+   ========================================== */
+#ui-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.ui-panel {
+    position: absolute;
+    background: rgba(0, 20, 40, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Instructions Panel */
+#instructions {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    max-width: 600px;
+}
+
+#instructions p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: #A0E7FF;
+}
+
+.controls-hint {
+    font-size: 0.85rem;
+    color: #7CB8D9;
+    margin-top: 0.5rem;
+}
+
+/* Subtitle Display */
+#subtitle-display {
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 400px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+#subtitle-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #FFFFFF;
+    margin: 0;
+}
+
+.subtitle.hidden {
+    display: none;
+}
+
+/* Scene Info Panel */
+#scene-info {
+    top: 20px;
+    left: 20px;
+    max-width: 400px;
+}
+
+#scene-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #00D9FF;
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+}
+
+#scene-description {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #B0D9E8;
+    margin: 0;
+}
+
+/* ==========================================
+   Accessibility Features
+   ========================================== */
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .ui-panel {
+        background: rgba(0, 0, 0, 0.95);
+        border: 2px solid #00FFFF;
+    }
+    
+    #scene-title,
+    #instructions p {
+        color: #00FFFF;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .ocean-wave {
+        animation: none;
+        border: 4px solid #00D9FF;
+    }
+    
+    .progress-fill {
+        transition: none;
+    }
+}
+
+/* ==========================================
+   VR Mode Adjustments
+   ========================================== */
+.a-enter-vr-button {
+    background-color: #00D9FF !important;
+    border: 2px solid #0077FF !important;
+    font-size: 1.1rem !important;
+    padding: 0.8rem 2rem !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4) !important;
+}
+
+.a-enter-vr-button:hover {
+    background-color: #0077FF !important;
+    box-shadow: 0 6px 20px rgba(0, 217, 255, 0.6) !important;
+}
+
+/* ==========================================
+   Responsive Design
+   ========================================== */
+@media (max-width: 768px) {
+    .loading-content h1 {
+        font-size: 2rem;
+    }
+    
+    #instructions {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        transform: none;
+        font-size: 0.9rem;
+    }
+    
+    #scene-info {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+    
+    #subtitle-display {
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+        transform: none;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .loading-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .loading-content p {
+        font-size: 1rem;
+    }
+    
+    #scene-title {
+        font-size: 1.2rem;
+    }
+    
+    #scene-description {
+        font-size: 0.85rem;
+    }
+}
+
+/* ==========================================
+   Animation Utilities
+   ========================================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+/* ==========================================
+   Color-Blind Safe Palette
+   ========================================== */
+:root {
+    --color-primary: #00D9FF;
+    --color-secondary: #FF6B00;
+    --color-success: #4CAF50;
+    --color-warning: #FFA726;
+    --color-danger: #EF5350;
+    --color-info: #42A5F5;
+}
