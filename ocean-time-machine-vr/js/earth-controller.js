@@ -6,7 +6,7 @@
 class EarthController {
     constructor() {
         this.currentYear = '2000';
-        this.autoPlay = true;
+        this.autoPlay = True; // DEFAULT: Auto-play OFF
         this.autoPlayTimer = null;
         this.autoPlayInterval = 5000; // 5 seconds
         
@@ -14,6 +14,10 @@ class EarthController {
         this.yearButtons = {};
         this.hotspots = [];
         this.infoPopup = null;
+        
+        // Globe rotation state (separate from camera)
+        this.globeRotation = { x: 0, y: 0 };
+        this.isRotatingGlobe = false;
         
         this.init();
     }
@@ -45,13 +49,8 @@ class EarthController {
             '2050': document.getElementById('earth-2050')
         };
 
-        // Get year buttons
-        this.yearButtons = {
-            '2000': document.getElementById('btn-2000'),
-            '2010': document.getElementById('btn-2010'),
-            '2020': document.getElementById('btn-2020'),
-            '2050': document.getElementById('btn-2050')
-        };
+        // Get HTML year buttons (NOT 3D buttons)
+        this.yearButtons = document.querySelectorAll('.year-btn');
 
         // Get hotspots
         this.hotspots = Array.from(document.querySelectorAll('.hotspot'));
@@ -65,10 +64,14 @@ class EarthController {
         // Setup event listeners
         this.setupEventListeners();
 
-        // Start auto-play
-        if (this.autoPlay) {
-            this.startAutoPlay();
-        }
+        // Hide rotation hint after 4 seconds
+        setTimeout(() => {
+            const hint = document.getElementById('rotation-hint');
+            if (hint) hint.style.display = 'none';
+        }, 4000);
+
+        // DON'T start auto-play by default
+        // User can click the button to enable it
 
         console.log('[EarthController] Ready');
     }
@@ -121,26 +124,13 @@ class EarthController {
      * Setup event listeners for interactions
      */
     setupEventListeners() {
-        // Year button clicks - Use mousedown for better VR compatibility
-        Object.entries(this.yearButtons).forEach(([year, button]) => {
-            if (!button) return;
-            
-            // Regular click
+        // HTML Year button clicks
+        this.yearButtons.forEach(button => {
             button.addEventListener('click', () => {
+                const year = button.getAttribute('data-year');
                 console.log('[EarthController] Year button clicked:', year);
                 this.switchYear(year);
                 this.resetAutoPlay();
-            });
-            
-            // Mouse enter for cursor (desktop)
-            button.addEventListener('mouseenter', () => {
-                this.switchYear(year);
-                this.resetAutoPlay();
-            });
-            
-            // Fusing complete (VR gaze)
-            button.addEventListener('fusing', () => {
-                console.log('[EarthController] Fusing on button:', year);
             });
         });
 
@@ -154,19 +144,11 @@ class EarthController {
                 this.showPopup(info);
                 
                 // Play click sound
-                if (window.audioController) {
-                    const clickSound = document.getElementById('audio-click');
-                    if (clickSound) {
-                        clickSound.currentTime = 0;
-                        clickSound.play().catch(() => {});
-                    }
+                const clickSound = document.getElementById('audio-click');
+                if (clickSound) {
+                    clickSound.currentTime = 0;
+                    clickSound.play().catch(() => {});
                 }
-            });
-            
-            // Also on mouseenter for easier interaction
-            hotspot.addEventListener('mouseenter', () => {
-                const info = hotspot.getAttribute('data-info');
-                this.showPopup(info);
             });
         });
 
@@ -177,113 +159,233 @@ class EarthController {
                 console.log('[EarthController] Close popup clicked');
                 this.hidePopup();
             });
-            
-            closeBtn.addEventListener('mouseenter', () => {
-                this.hidePopup();
-            });
         }
 
-        // Auto-play toggle
-        const autoPlayBtn = document.getElementById('btn-autoplay');
+        // Auto-play toggle (HTML button)
+        const autoPlayBtn = document.getElementById('autoplay-btn');
         if (autoPlayBtn) {
             autoPlayBtn.addEventListener('click', () => {
                 console.log('[EarthController] Auto-play button clicked');
                 this.toggleAutoPlay();
             });
-            
-            autoPlayBtn.addEventListener('mouseenter', () => {
-                this.toggleAutoPlay();
-            });
         }
 
-        // Add manual Earth rotation with mouse drag
-        this.setupEarthRotation();
+        // Enable smooth 360° GLOBE rotation (separate from camera)
+        this.setupGlobeRotation();
 
         console.log('[EarthController] Event listeners ready');
     }
 
     /**
-     * Setup manual Earth rotation with mouse/touch
+     * Setup GLOBE rotation (the Earth sphere itself rotates 360°)
+     * This is SEPARATE from camera rotation
      */
-    setupEarthRotation() {
+    setupGlobeRotation() {
         const earthContainer = document.getElementById('earth-container');
         if (!earthContainer) return;
 
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let currentRotation = { x: 0, y: 0 };
+        let velocity = { x: 0, y: 0 };
+        let lastMoveTime = Date.now();
+        
+        // Rotation speed multiplier
+        const rotationSpeed = 0.5;
+        const damping = 0.96; // Inertia damping
+        const minVelocity = 0.01; // Stop threshold
+
+        // Inertia animation loop
+        let inertiaAnimationId = null;
+        
+        const applyInertia = () => {
+            if (!isDragging && (Math.abs(velocity.x) > minVelocity || Math.abs(velocity.y) > minVelocity)) {
+                this.globeRotation.y += velocity.y;
+                this.globeRotation.x += velocity.x;
+                
+                // Apply damping
+                velocity.x *= damping;
+                velocity.y *= damping;
+                
+                // Update ALL visible Earth spheres
+                Object.values(this.earthSpheres).forEach(sphere => {
+                    if (sphere && sphere.getAttribute('visible')) {
+                        sphere.setAttribute('rotation', 
+                            `${this.globeRotation.x} ${this.globeRotation.y} 0`
+                        );
+                    }
+                });
+                
+                // Also rotate hotspots with the globe
+                this.rotateHotspots();
+                
+                inertiaAnimationId = requestAnimationFrame(applyInertia);
+            } else {
+                velocity = { x: 0, y: 0 };
+            }
+        };
 
         // Mouse events
         document.addEventListener('mousedown', (e) => {
-            // Only if clicking on empty space (not UI)
-            if (e.target.tagName === 'CANVAS' || e.target.tagName === 'A-SCENE') {
-                isDragging = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
+            // Don't rotate if clicking on UI buttons or panels
+            if (e.target.closest('.year-btn') || 
+                e.target.closest('.autoplay-btn') || 
+                e.target.closest('.ui-panel')) {
+                return;
             }
+            
+            isDragging = true;
+            this.isRotatingGlobe = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+            lastMoveTime = Date.now();
+            velocity = { x: 0, y: 0 };
+            
+            // Cancel inertia
+            if (inertiaAnimationId) {
+                cancelAnimationFrame(inertiaAnimationId);
+            }
+            
+            document.body.style.cursor = 'grabbing';
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
 
+            const now = Date.now();
+            const deltaTime = now - lastMoveTime;
+            
             const deltaX = e.clientX - previousMousePosition.x;
             const deltaY = e.clientY - previousMousePosition.y;
 
-            currentRotation.y += deltaX * 0.5;
-            currentRotation.x -= deltaY * 0.5;
+            // Update globe rotation
+            const rotX = -deltaY * rotationSpeed;
+            const rotY = deltaX * rotationSpeed;
+            
+            this.globeRotation.y += rotY;
+            this.globeRotation.x += rotX;
 
-            // Clamp X rotation to prevent flipping
-            currentRotation.x = Math.max(-90, Math.min(90, currentRotation.x));
+            // Calculate velocity for inertia
+            if (deltaTime > 0) {
+                velocity.x = rotX / Math.max(deltaTime, 1) * 10;
+                velocity.y = rotY / Math.max(deltaTime, 1) * 10;
+            }
 
-            earthContainer.setAttribute('rotation', 
-                `${currentRotation.x} ${currentRotation.y} 0`
-            );
+            // Apply rotation to ALL visible Earth spheres
+            Object.values(this.earthSpheres).forEach(sphere => {
+                if (sphere && sphere.getAttribute('visible')) {
+                    sphere.setAttribute('rotation', 
+                        `${this.globeRotation.x} ${this.globeRotation.y} 0`
+                    );
+                }
+            });
+
+            // Rotate hotspots with the globe
+            this.rotateHotspots();
 
             previousMousePosition = { x: e.clientX, y: e.clientY };
+            lastMoveTime = now;
         });
 
         document.addEventListener('mouseup', () => {
-            isDragging = false;
+            if (isDragging) {
+                isDragging = false;
+                this.isRotatingGlobe = false;
+                document.body.style.cursor = 'default';
+                
+                // Start inertia animation
+                applyInertia();
+            }
         });
 
         // Touch events for mobile
         document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.year-btn') || 
+                e.target.closest('.autoplay-btn') || 
+                e.target.closest('.ui-panel')) {
+                return;
+            }
+            
             if (e.touches.length === 1) {
                 isDragging = true;
+                this.isRotatingGlobe = true;
                 previousMousePosition = { 
                     x: e.touches[0].clientX, 
                     y: e.touches[0].clientY 
                 };
+                lastMoveTime = Date.now();
+                velocity = { x: 0, y: 0 };
+                
+                if (inertiaAnimationId) {
+                    cancelAnimationFrame(inertiaAnimationId);
+                }
             }
-        });
+        }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
             if (!isDragging || e.touches.length !== 1) return;
 
+            const now = Date.now();
+            const deltaTime = now - lastMoveTime;
+            
             const deltaX = e.touches[0].clientX - previousMousePosition.x;
             const deltaY = e.touches[0].clientY - previousMousePosition.y;
 
-            currentRotation.y += deltaX * 0.5;
-            currentRotation.x -= deltaY * 0.5;
+            const rotX = -deltaY * rotationSpeed;
+            const rotY = deltaX * rotationSpeed;
+            
+            this.globeRotation.y += rotY;
+            this.globeRotation.x += rotX;
 
-            currentRotation.x = Math.max(-90, Math.min(90, currentRotation.x));
+            // Calculate velocity
+            if (deltaTime > 0) {
+                velocity.x = rotX / Math.max(deltaTime, 1) * 10;
+                velocity.y = rotY / Math.max(deltaTime, 1) * 10;
+            }
 
-            earthContainer.setAttribute('rotation', 
-                `${currentRotation.x} ${currentRotation.y} 0`
-            );
+            // Apply rotation to visible spheres
+            Object.values(this.earthSpheres).forEach(sphere => {
+                if (sphere && sphere.getAttribute('visible')) {
+                    sphere.setAttribute('rotation', 
+                        `${this.globeRotation.x} ${this.globeRotation.y} 0`
+                    );
+                }
+            });
+
+            // Rotate hotspots
+            this.rotateHotspots();
 
             previousMousePosition = { 
                 x: e.touches[0].clientX, 
                 y: e.touches[0].clientY 
             };
-
-            e.preventDefault();
-        });
+            lastMoveTime = now;
+        }, { passive: true });
 
         document.addEventListener('touchend', () => {
-            isDragging = false;
+            if (isDragging) {
+                isDragging = false;
+                this.isRotatingGlobe = false;
+                applyInertia();
+            }
         });
 
-        console.log('[EarthController] Manual rotation enabled');
+        console.log('[EarthController] Globe 360° rotation enabled (separate from camera)');
+    }
+
+    /**
+     * Rotate hotspots with the globe
+     */
+    rotateHotspots() {
+        // Hotspots rotate with the globe but stay visible
+        this.hotspots.forEach(hotspot => {
+            if (hotspot) {
+                // Get original position
+                const pos = hotspot.getAttribute('position');
+                // Apply same rotation as globe to keep hotspots on surface
+                hotspot.setAttribute('rotation', 
+                    `${this.globeRotation.x} ${this.globeRotation.y} 0`
+                );
+            }
+        });
     }
 
     /**
@@ -300,19 +402,22 @@ class EarthController {
             this.earthSpheres[this.currentYear].setAttribute('visible', false);
         }
 
-        // Show new Earth
+        // Show new Earth with current rotation
         if (this.earthSpheres[year]) {
             this.earthSpheres[year].setAttribute('visible', true);
+            // Apply current globe rotation to new sphere
+            this.earthSpheres[year].setAttribute('rotation', 
+                `${this.globeRotation.x} ${this.globeRotation.y} 0`
+            );
         }
 
-        // Update button states
-        Object.entries(this.yearButtons).forEach(([y, button]) => {
-            if (y === year) {
-                button.setAttribute('color', '#00D9FF');
-                button.classList.add('active-year');
+        // Update HTML button states
+        this.yearButtons.forEach(button => {
+            const buttonYear = button.getAttribute('data-year');
+            if (buttonYear === year) {
+                button.classList.add('active');
             } else {
-                button.setAttribute('color', '#003366');
-                button.classList.remove('active-year');
+                button.classList.remove('active');
             }
         });
 
@@ -417,15 +522,12 @@ class EarthController {
             this.nextYear();
         }, this.autoPlayInterval);
 
-        // Update button
-        const autoPlayText = document.getElementById('autoplay-text');
-        if (autoPlayText) {
-            autoPlayText.setAttribute('value', 'AUTO-PLAY ON');
-        }
-
-        const autoPlayBtn = document.getElementById('btn-autoplay');
+        // Update HTML button
+        const autoPlayBtn = document.getElementById('autoplay-btn');
         if (autoPlayBtn) {
-            autoPlayBtn.setAttribute('color', '#4CAF50');
+            autoPlayBtn.classList.add('active');
+            const textEl = autoPlayBtn.querySelector('.text');
+            if (textEl) textEl.textContent = 'Auto-Play ON';
         }
 
         console.log('[EarthController] Auto-play started');
@@ -442,15 +544,12 @@ class EarthController {
             this.autoPlayTimer = null;
         }
 
-        // Update button
-        const autoPlayText = document.getElementById('autoplay-text');
-        if (autoPlayText) {
-            autoPlayText.setAttribute('value', 'AUTO-PLAY OFF');
-        }
-
-        const autoPlayBtn = document.getElementById('btn-autoplay');
+        // Update HTML button
+        const autoPlayBtn = document.getElementById('autoplay-btn');
         if (autoPlayBtn) {
-            autoPlayBtn.setAttribute('color', '#666666');
+            autoPlayBtn.classList.remove('active');
+            const textEl = autoPlayBtn.querySelector('.text');
+            if (textEl) textEl.textContent = 'Auto-Play OFF';
         }
 
         console.log('[EarthController] Auto-play stopped');
@@ -499,14 +598,6 @@ class EarthController {
         const prevIndex = (currentIndex - 1 + years.length) % years.length;
         
         this.switchYear(years[prevIndex]);
-    }
-
-    /**
-     * Update hotspot visibility based on year
-     */
-    updateHotspots() {
-        // You can show/hide different hotspots based on year
-        // For now, all are visible
     }
 
     /**
