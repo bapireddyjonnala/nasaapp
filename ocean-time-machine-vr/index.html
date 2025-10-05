@@ -10,14 +10,281 @@
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #001133 0%, #003366 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: #00D9FF;
+        }
+
+        .ocean-wave {
+            font-size: 80px;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .loading-content h1 {
+            font-size: 48px;
+            margin: 20px 0;
+            color: #00D9FF;
+        }
+
+        .loading-content p {
+            font-size: 18px;
+            color: #A0E7FF;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 6px;
+            background: #003366;
+            border-radius: 3px;
+            margin: 30px auto;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00D9FF, #00FFAA);
+            transition: width 0.3s;
+        }
+
+        /* UI Overlay */
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .ui-panel {
+            pointer-events: auto;
+            background: rgba(0, 17, 51, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        }
+
+        #scene-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            max-width: 400px;
+        }
+
+        #scene-info h2 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            color: #00D9FF;
+        }
+
+        #scene-info p {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #A0E7FF;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            padding: 15px 25px;
+        }
+
+        #instructions p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #00D9FF;
+        }
+
+        .controls-hint {
+            font-size: 12px !important;
+            color: #666 !important;
+        }
+
+        /* Year Control Buttons - Outside 3D Scene */
+        #year-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        .year-btn {
+            background: linear-gradient(135deg, #003366 0%, #001133 100%);
+            color: #FFFFFF;
+            border: 2px solid #00D9FF;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            min-width: 100px;
+        }
+
+        .year-btn:hover {
+            background: linear-gradient(135deg, #004488 0%, #002255 100%);
+            border-color: #00FFAA;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 217, 255, 0.5);
+        }
+
+        .year-btn.active {
+            background: linear-gradient(135deg, #00D9FF 0%, #00FFAA 100%);
+            color: #001133;
+            border-color: #FFFFFF;
+            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.8);
+        }
+
+        .year-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Auto-play button */
+        #autoplay-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        #autoplay-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: #FFFFFF;
+            border: 2px solid #66BB6A;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        #autoplay-btn:hover {
+            background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        #autoplay-btn.inactive {
+            background: linear-gradient(135deg, #666666 0%, #444444 100%);
+            border-color: #888888;
+        }
+
+        #autoplay-btn.inactive:hover {
+            background: linear-gradient(135deg, #777777 0%, #555555 100%);
+        }
+
+        #subtitle-display {
+            position: absolute;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 800px;
+            text-align: center;
+            padding: 20px 30px;
+        }
+
+        #subtitle-display.hidden {
+            display: none;
+        }
+
+        #subtitle-text {
+            margin: 0;
+            font-size: 20px;
+            color: #FFFFFF;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            #scene-info {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 15px;
+            }
+
+            #scene-info h2 {
+                font-size: 22px;
+            }
+
+            #scene-info p {
+                font-size: 14px;
+            }
+
+            #instructions {
+                bottom: 100px;
+                padding: 10px 15px;
+            }
+
+            #subtitle-text {
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Loading Screen -->
     <div id="loading-screen">
         <div class="loading-content">
-            <div class="ocean-wave"></div>
-            <h1>🌊 Ocean Time Machine</h1>
+            <div class="ocean-wave">🌊</div>
+            <h1>Ocean Time Machine</h1>
             <p>Initializing Earth observation system...</p>
             <div class="progress-bar">
                 <div class="progress-fill" id="progress-fill"></div>
@@ -70,15 +337,17 @@
             <a-entity id="star-field" position="0 0 0"></a-entity>
         </a-entity>
 
-        <!-- Main Earth Entity (User can rotate manually) -->
-        <a-entity id="earth-container" position="0 0 0">
+        <!-- Main Earth Entity (Auto-rotates slowly) -->
+        <a-entity id="earth-container" position="0 0 0" 
+                  animation="property: rotation; to: 0 360 0; loop: true; dur: 120000; easing: linear">
             
             <!-- EARTH SPHERE - Year 2000 -->
             <a-sphere 
                 id="earth-2000"
                 radius="3"
                 position="0 0 0"
-                material="shader: standard; color: #2E7D9A; roughness: 0.8; metalness: 0.2"
+                src="assets/textures/earth-2000-ocean.jpg"
+                material="shader: standard; roughness: 0.8; metalness: 0.2"
                 visible="true"
                 shadow="cast: true">
             </a-sphere>
@@ -88,7 +357,8 @@
                 id="earth-2010"
                 radius="3"
                 position="0 0 0"
-                material="shader: standard; color: #D4894A; roughness: 0.8; metalness: 0.2"
+                src="assets/textures/earth-2010-ocean.jpg"
+                material="shader: standard; roughness: 0.8; metalness: 0.2"
                 visible="false"
                 shadow="cast: true">
             </a-sphere>
@@ -98,7 +368,8 @@
                 id="earth-2020"
                 radius="3"
                 position="0 0 0"
-                material="shader: standard; color: #C94A3D; roughness: 0.8; metalness: 0.2"
+                src="assets/textures/earth-2020-ocean.jpg"
+                material="shader: standard; roughness: 0.8; metalness: 0.2"
                 visible="false"
                 shadow="cast: true">
             </a-sphere>
@@ -108,7 +379,8 @@
                 id="earth-2050"
                 radius="3"
                 position="0 0 0"
-                material="shader: standard; color: #8B1A1A; roughness: 0.8; metalness: 0.2"
+                src="assets/textures/earth-2050-ocean.jpg"
+                material="shader: standard; roughness: 0.8; metalness: 0.2"
                 visible="false"
                 shadow="cast: true">
             </a-sphere>
@@ -245,133 +517,85 @@
             </a-plane>
         </a-entity>
 
-        <!-- Timeline Control UI (Bottom) -->
-        <a-entity id="timeline-ui" position="0 -3 2">
+        <!-- Timeline Control UI (Bottom Center - Larger Buttons) -->
+        <a-entity id="timeline-ui" position="0 -2.5 3">
             <!-- Background panel -->
             <a-plane 
                 color="#001133"
-                width="8"
-                height="1"
-                material="shader: flat; opacity: 0.9; transparent: true">
+                width="9"
+                height="1.2"
+                material="shader: flat; opacity: 0.95; transparent: true">
             </a-plane>
             
-            <!-- Year buttons -->
-            <a-entity position="-3 0 0.02">
+            <!-- Year buttons - Larger and more spaced -->
+            <a-entity position="-3.3 0 0.02">
                 <a-plane 
                     id="btn-2000"
                     class="interactive year-button active-year"
-                    width="1.5"
-                    height="0.6"
+                    width="2"
+                    height="0.8"
                     color="#00D9FF"
                     material="shader: flat; opacity: 0.9">
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseenter"
-                        to="1.1 1.1 1"
-                        dur="200">
-                    </a-animation>
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseleave"
-                        to="1 1 1"
-                        dur="200">
-                    </a-animation>
                 </a-plane>
                 <a-text 
                     value="2000"
                     align="center"
                     position="0 0 0.01"
-                    width="2.5"
+                    width="3.5"
                     color="#FFFFFF">
                 </a-text>
             </a-entity>
 
-            <a-entity position="-1 0 0.02">
+            <a-entity position="-1.1 0 0.02">
                 <a-plane 
                     id="btn-2010"
                     class="interactive year-button"
-                    width="1.5"
-                    height="0.6"
+                    width="2"
+                    height="0.8"
                     color="#003366"
                     material="shader: flat; opacity: 0.9">
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseenter"
-                        to="1.1 1.1 1"
-                        dur="200">
-                    </a-animation>
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseleave"
-                        to="1 1 1"
-                        dur="200">
-                    </a-animation>
                 </a-plane>
                 <a-text 
                     value="2010"
                     align="center"
                     position="0 0 0.01"
-                    width="2.5"
+                    width="3.5"
                     color="#FFFFFF">
                 </a-text>
             </a-entity>
 
-            <a-entity position="1 0 0.02">
+            <a-entity position="1.1 0 0.02">
                 <a-plane 
                     id="btn-2020"
                     class="interactive year-button"
-                    width="1.5"
-                    height="0.6"
+                    width="2"
+                    height="0.8"
                     color="#003366"
                     material="shader: flat; opacity: 0.9">
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseenter"
-                        to="1.1 1.1 1"
-                        dur="200">
-                    </a-animation>
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseleave"
-                        to="1 1 1"
-                        dur="200">
-                    </a-animation>
                 </a-plane>
                 <a-text 
                     value="2020"
                     align="center"
                     position="0 0 0.01"
-                    width="2.5"
+                    width="3.5"
                     color="#FFFFFF">
                 </a-text>
             </a-entity>
 
-            <a-entity position="3 0 0.02">
+            <a-entity position="3.3 0 0.02">
                 <a-plane 
                     id="btn-2050"
                     class="interactive year-button"
-                    width="1.5"
-                    height="0.6"
+                    width="2"
+                    height="0.8"
                     color="#003366"
                     material="shader: flat; opacity: 0.9">
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseenter"
-                        to="1.1 1.1 1"
-                        dur="200">
-                    </a-animation>
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseleave"
-                        to="1 1 1"
-                        dur="200">
-                    </a-animation>
                 </a-plane>
                 <a-text 
                     value="2050"
                     align="center"
                     position="0 0 0.01"
-                    width="2.5"
+                    width="3.5"
                     color="#FFFFFF">
                 </a-text>
             </a-entity>
@@ -385,18 +609,6 @@
                     height="0.5"
                     color="#4CAF50"
                     material="shader: flat; opacity: 0.9">
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseenter"
-                        to="1.1 1.1 1"
-                        dur="200">
-                    </a-animation>
-                    <a-animation 
-                        attribute="scale"
-                        begin="mouseleave"
-                        to="1 1 1"
-                        dur="200">
-                    </a-animation>
                 </a-plane>
                 <a-text 
                     id="autoplay-text"
@@ -435,7 +647,7 @@
         <!-- Instructions -->
         <div id="instructions" class="ui-panel">
             <p>🔴 Click glowing hotspots to explore data</p>
-            <p class="controls-hint">🎮 Click year buttons to travel through time | Auto-play runs every 5 seconds</p>
+            <p class="controls-hint">🎮 Click year buttons to travel through time | Drag globe to rotate | Auto-play runs every 5 seconds</p>
         </div>
 
         <!-- Subtitle Display -->
@@ -444,13 +656,544 @@
         </div>
     </div>
 
-    <!-- JavaScript Modules -->
-    <script src="js/config.js"></script>
-    <script src="js/audio-controller.js"></script>
-    <script src="js/ui-manager.js"></script>
-    <script src="js/animation-controller.js"></script>
-    <script src="js/scene-manager.js"></script>
-    <script src="js/earth-controller.js"></script>
-    <script src="js/init.js"></script>
+    <!-- JavaScript - Inline for Complete Single File -->
+    <script>
+        // CONFIG
+        const CONFIG = {
+            scenes: {
+                '2000': {
+                    id: 'earth-2000',
+                    title: 'Year 2000 - Baseline Conditions',
+                    description: 'Healthy oceans with vibrant ecosystems. This is our baseline before significant climate impact.',
+                    subtitles: [
+                        { time: 0, text: 'Welcome to the year 2000. Our oceans are healthy and vibrant.' },
+                        { time: 5000, text: 'NASA satellites monitor ocean color, temperature, and sea ice from space.' }
+                    ]
+                },
+                '2010': {
+                    id: 'earth-2010',
+                    title: 'Year 2010 - Early Warning Signs',
+                    description: 'First decade of the 21st century shows subtle but measurable ocean changes.',
+                    subtitles: [
+                        { time: 0, text: 'By 2010, NASA data reveals early signs of ocean warming.' },
+                        { time: 5000, text: 'Ocean temperatures increased by 0.35°C globally.' }
+                    ]
+                },
+                '2020': {
+                    id: 'earth-2020',
+                    title: 'Year 2020 - Accelerating Change',
+                    description: 'Two decades of warming show dramatic impacts on marine ecosystems worldwide.',
+                    subtitles: [
+                        { time: 0, text: 'Welcome to 2020. The pace of change has accelerated.' },
+                        { time: 5000, text: 'Ocean temperatures rose 0.7°C. Arctic ice declined 13% per decade.' }
+                    ]
+                },
+                '2050': {
+                    id: 'earth-2050',
+                    title: 'Year 2050 - Projected Future',
+                    description: 'This is what we could face if current trends continue. But change is possible.',
+                    subtitles: [
+                        { time: 0, text: 'This is a projected future for 2050 based on current trends.' },
+                        { time: 5000, text: 'Sea levels could rise 50cm, displacing millions.' }
+                    ]
+                }
+            },
+            dataPanels: {
+                '2000': {
+                    left: 'YEAR 2000\n\nOcean Health: GOOD\nGlobal Temp: Baseline\nSea Level: Baseline\n\nNASA MODIS\nOcean Color Data',
+                    right: 'OBSERVATIONS\n\n• Healthy coral reefs\n• Stable ice coverage\n• Rich biodiversity\n• Baseline conditions'
+                },
+                '2010': {
+                    left: 'YEAR 2010\n\nOcean Health: FAIR\nTemp: +0.35°C\nSea Level: +3cm\n\nNASA MODIS\nOcean Color Data',
+                    right: 'OBSERVATIONS\n\n• Early coral bleaching\n• Ice beginning to melt\n• Ocean warming starts\n• pH levels dropping'
+                },
+                '2020': {
+                    left: 'YEAR 2020\n\nOcean Health: POOR\nTemp: +0.7°C\nSea Level: +9cm\n\nNASA MODIS\nOcean Color Data',
+                    right: 'OBSERVATIONS\n\n• Mass coral bleaching\n• Arctic ice decline 13%\n• Marine heatwaves\n• Species migration'
+                },
+                '2050': {
+                    left: 'YEAR 2050\n\nOcean Health: CRITICAL\nTemp: +1.5°C (Projected)\nSea Level: +50cm\n\nNASA PROJECTIONS',
+                    right: 'PROJECTIONS\n\n• Coral reefs 85% lost\n• Arctic ice-free summers\n• Coastal flooding\n• Hope through action'
+                }
+            }
+        };
+
+        // EARTH CONTROLLER
+        class EarthController {
+            constructor() {
+                this.currentYear = '2000';
+                this.autoPlay = true;
+                this.autoPlayTimer = null;
+                this.autoPlayInterval = 5000;
+                this.earthSpheres = {};
+                this.yearButtons = {};
+                this.hotspots = [];
+                this.infoPopup = null;
+                this.init();
+            }
+
+            init() {
+                const scene = document.querySelector('a-scene');
+                if (scene.hasLoaded) {
+                    this.setup();
+                } else {
+                    scene.addEventListener('loaded', () => this.setup());
+                }
+            }
+
+            setup() {
+                this.earthSpheres = {
+                    '2000': document.getElementById('earth-2000'),
+                    '2010': document.getElementById('earth-2010'),
+                    '2020': document.getElementById('earth-2020'),
+                    '2050': document.getElementById('earth-2050')
+                };
+
+                this.yearButtons = {
+                    '2000': document.getElementById('btn-2000'),
+                    '2010': document.getElementById('btn-2010'),
+                    '2020': document.getElementById('btn-2020'),
+                    '2050': document.getElementById('btn-2050')
+                };
+
+                this.hotspots = Array.from(document.querySelectorAll('.hotspot'));
+                this.infoPopup = document.getElementById('info-popup');
+
+                this.createStarField();
+                this.setupEventListeners();
+                this.setupEarthRotation();
+
+                if (this.autoPlay) {
+                    this.startAutoPlay();
+                }
+            }
+
+            createStarField() {
+                const starField = document.getElementById('star-field');
+                if (!starField) return;
+
+                for (let i = 0; i < 200; i++) {
+                    const star = document.createElement('a-sphere');
+                    const radius = 95;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI;
+                    
+                    const x = radius * Math.sin(phi) * Math.cos(theta);
+                    const y = radius * Math.sin(phi) * Math.sin(theta);
+                    const z = radius * Math.cos(phi);
+                    
+                    star.setAttribute('position', `${x} ${y} ${z}`);
+                    star.setAttribute('radius', Math.random() * 0.05 + 0.02);
+                    star.setAttribute('color', '#FFFFFF');
+                    star.setAttribute('material', 'shader: flat');
+                    
+                    if (Math.random() > 0.7) {
+                        star.setAttribute('animation', {
+                            property: 'material.opacity',
+                            from: 1,
+                            to: 0.3,
+                            dur: 1000 + Math.random() * 2000,
+                            loop: true,
+                            dir: 'alternate',
+                            easing: 'easeInOutSine'
+                        });
+                    }
+                    
+                    starField.appendChild(star);
+                }
+            }
+
+            setupEventListeners() {
+                Object.entries(this.yearButtons).forEach(([year, button]) => {
+                    if (!button) return;
+                    
+                    button.addEventListener('click', () => {
+                        this.switchYear(year);
+                        this.resetAutoPlay();
+                    });
+                    
+                    button.addEventListener('mouseenter', () => {
+                        this.switchYear(year);
+                        this.resetAutoPlay();
+                    });
+                });
+
+                this.hotspots.forEach(hotspot => {
+                    if (!hotspot) return;
+                    
+                    hotspot.addEventListener('click', () => {
+                        const info = hotspot.getAttribute('data-info');
+                        this.showPopup(info);
+                        
+                        const clickSound = document.getElementById('audio-click');
+                        if (clickSound) {
+                            clickSound.currentTime = 0;
+                            clickSound.play().catch(() => {});
+                        }
+                    });
+                    
+                    hotspot.addEventListener('mouseenter', () => {
+                        const info = hotspot.getAttribute('data-info');
+                        this.showPopup(info);
+                    });
+                });
+
+                const closeBtn = document.getElementById('close-popup');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => this.hidePopup());
+                    closeBtn.addEventListener('mouseenter', () => this.hidePopup());
+                }
+
+                const autoPlayBtn = document.getElementById('btn-autoplay');
+                if (autoPlayBtn) {
+                    autoPlayBtn.addEventListener('click', () => this.toggleAutoPlay());
+                    autoPlayBtn.addEventListener('mouseenter', () => this.toggleAutoPlay());
+                }
+            }
+
+            setupEarthRotation() {
+                const earthContainer = document.getElementById('earth-container');
+                if (!earthContainer) return;
+
+                let isDragging = false;
+                let previousMousePosition = { x: 0, y: 0 };
+                let currentRotation = { x: 0, y: 0 };
+                let isAutoRotating = true;
+
+                const canvas = document.querySelector('a-scene').canvas;
+
+                canvas.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    isAutoRotating = false;
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                    
+                    earthContainer.removeAttribute('animation');
+                    
+                    const rot = earthContainer.getAttribute('rotation');
+                    currentRotation = { x: rot.x, y: rot.y };
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+
+                    currentRotation.y += deltaX * 0.5;
+                    currentRotation.x -= deltaY * 0.5;
+                    currentRotation.x = Math.max(-90, Math.min(90, currentRotation.x));
+
+                    earthContainer.setAttribute('rotation', 
+                        `${currentRotation.x} ${currentRotation.y} 0`
+                    );
+
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        
+                        setTimeout(() => {
+                            if (!isAutoRotating) {
+                                isAutoRotating = true;
+                                const currentY = earthContainer.getAttribute('rotation').y;
+                                earthContainer.setAttribute('animation', {
+                                    property: 'rotation',
+                                    to: `0 ${currentY + 360} 0`,
+                                    loop: true,
+                                    dur: 120000,
+                                    easing: 'linear'
+                                });
+                            }
+                        }, 2000);
+                    }
+                });
+
+                canvas.addEventListener('touchstart', (e) => {
+                    if (e.touches.length === 1) {
+                        isDragging = true;
+                        isAutoRotating = false;
+                        previousMousePosition = { 
+                            x: e.touches[0].clientX, 
+                            y: e.touches[0].clientY 
+                        };
+                        
+                        earthContainer.removeAttribute('animation');
+                        
+                        const rot = earthContainer.getAttribute('rotation');
+                        currentRotation = { x: rot.x, y: rot.y };
+                    }
+                });
+
+                canvas.addEventListener('touchmove', (e) => {
+                    if (!isDragging || e.touches.length !== 1) return;
+
+                    const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                    const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                    currentRotation.y += deltaX * 0.5;
+                    currentRotation.x -= deltaY * 0.5;
+                    currentRotation.x = Math.max(-90, Math.min(90, currentRotation.x));
+
+                    earthContainer.setAttribute('rotation', 
+                        `${currentRotation.x} ${currentRotation.y} 0`
+                    );
+
+                    previousMousePosition = { 
+                        x: e.touches[0].clientX, 
+                        y: e.touches[0].clientY 
+                    };
+
+                    e.preventDefault();
+                });
+
+                canvas.addEventListener('touchend', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        
+                        setTimeout(() => {
+                            if (!isAutoRotating) {
+                                isAutoRotating = true;
+                                const currentY = earthContainer.getAttribute('rotation').y;
+                                earthContainer.setAttribute('animation', {
+                                    property: 'rotation',
+                                    to: `0 ${currentY + 360} 0`,
+                                    loop: true,
+                                    dur: 120000,
+                                    easing: 'linear'
+                                });
+                            }
+                        }, 2000);
+                    }
+                });
+            }
+
+            switchYear(year) {
+                if (this.currentYear === year) return;
+
+                if (this.earthSpheres[this.currentYear]) {
+                    this.earthSpheres[this.currentYear].setAttribute('visible', false);
+                }
+
+                if (this.earthSpheres[year]) {
+                    this.earthSpheres[year].setAttribute('visible', true);
+                }
+
+                Object.entries(this.yearButtons).forEach(([y, button]) => {
+                    if (y === year) {
+                        button.setAttribute('color', '#00D9FF');
+                        button.classList.add('active-year');
+                    } else {
+                        button.setAttribute('color', '#003366');
+                        button.classList.remove('active-year');
+                    }
+                });
+
+                this.updateDataPanels(year);
+                this.updateSceneInfo(year);
+                this.playNarration(year);
+
+                this.currentYear = year;
+            }
+
+            updateDataPanels(year) {
+                const dataTextLeft = document.getElementById('data-text-left');
+                const dataTextRight = document.getElementById('data-text-right');
+                const dataContent = CONFIG.dataPanels[year];
+
+                if (dataTextLeft && dataContent) {
+                    dataTextLeft.setAttribute('value', dataContent.left);
+                }
+
+                if (dataTextRight && dataContent) {
+                    dataTextRight.setAttribute('value', dataContent.right);
+                }
+            }
+
+            updateSceneInfo(year) {
+                const sceneTitle = document.getElementById('scene-title');
+                const sceneDescription = document.getElementById('scene-description');
+                const sceneConfig = CONFIG.scenes[year];
+
+                if (sceneTitle && sceneConfig) {
+                    sceneTitle.textContent = sceneConfig.title;
+                }
+
+                if (sceneDescription && sceneConfig) {
+                    sceneDescription.textContent = sceneConfig.description;
+                }
+            }
+
+            playNarration(year) {
+                const narrationId = `audio-narration-${year}`;
+                const narration = document.getElementById(narrationId);
+                
+                if (narration) {
+                    narration.currentTime = 0;
+                    narration.play().catch(e => {
+                        console.log('Narration blocked:', e.message);
+                    });
+                }
+            }
+
+            showPopup(info) {
+                if (!this.infoPopup) return;
+
+                const popupText = document.getElementById('info-popup-text');
+                if (popupText) {
+                    popupText.setAttribute('value', info);
+                }
+
+                this.infoPopup.setAttribute('visible', true);
+            }
+
+            hidePopup() {
+                if (this.infoPopup) {
+                    this.infoPopup.setAttribute('visible', false);
+                }
+            }
+
+            startAutoPlay() {
+                this.autoPlay = true;
+                
+                this.autoPlayTimer = setInterval(() => {
+                    this.nextYear();
+                }, this.autoPlayInterval);
+
+                const autoPlayText = document.getElementById('autoplay-text');
+                if (autoPlayText) {
+                    autoPlayText.setAttribute('value', 'AUTO-PLAY ON');
+                }
+
+                const autoPlayBtn = document.getElementById('btn-autoplay');
+                if (autoPlayBtn) {
+                    autoPlayBtn.setAttribute('color', '#4CAF50');
+                }
+            }
+
+            stopAutoPlay() {
+                this.autoPlay = false;
+                
+                if (this.autoPlayTimer) {
+                    clearInterval(this.autoPlayTimer);
+                    this.autoPlayTimer = null;
+                }
+
+                const autoPlayText = document.getElementById('autoplay-text');
+                if (autoPlayText) {
+                    autoPlayText.setAttribute('value', 'AUTO-PLAY OFF');
+                }
+
+                const autoPlayBtn = document.getElementById('btn-autoplay');
+                if (autoPlayBtn) {
+                    autoPlayBtn.setAttribute('color', '#666666');
+                }
+            }
+
+            toggleAutoPlay() {
+                if (this.autoPlay) {
+                    this.stopAutoPlay();
+                } else {
+                    this.startAutoPlay();
+                }
+            }
+
+            resetAutoPlay() {
+                if (this.autoPlay) {
+                    if (this.autoPlayTimer) {
+                        clearInterval(this.autoPlayTimer);
+                    }
+                    this.startAutoPlay();
+                }
+            }
+
+            nextYear() {
+                const years = ['2000', '2010', '2020', '2050'];
+                const currentIndex = years.indexOf(this.currentYear);
+                const nextIndex = (currentIndex + 1) % years.length;
+                
+                this.switchYear(years[nextIndex]);
+            }
+        }
+
+        // INITIALIZATION
+        (function() {
+            'use strict';
+
+            console.log('🌊 Ocean Time Machine VR - Initializing...');
+
+            let earthController = null;
+
+            function init() {
+                const scene = document.querySelector('a-scene');
+
+                if (!scene) {
+                    console.error('Scene element not found');
+                    return;
+                }
+
+                if (scene.hasLoaded) {
+                    onSceneLoaded();
+                } else {
+                    scene.addEventListener('loaded', onSceneLoaded);
+                }
+            }
+
+            function onSceneLoaded() {
+                console.log('Scene loaded');
+
+                // Initialize Earth Controller
+                earthController = new EarthController();
+
+                // Hide loading screen
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }
+                }, 1000);
+
+                // Setup keyboard shortcuts
+                document.addEventListener('keydown', (event) => {
+                    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                        return;
+                    }
+
+                    switch(event.key.toLowerCase()) {
+                        case '1':
+                            earthController.switchYear('2000');
+                            break;
+                        case '2':
+                            earthController.switchYear('2010');
+                            break;
+                        case '3':
+                            earthController.switchYear('2020');
+                            break;
+                        case '4':
+                            earthController.switchYear('2050');
+                            break;
+                        case ' ':
+                            earthController.toggleAutoPlay();
+                            break;
+                    }
+                });
+
+                console.log('🌊 Ocean Time Machine VR - Ready!');
+                console.log('Keyboard shortcuts: 1=2000, 2=2010, 3=2020, 4=2050, Space=Toggle Auto-play');
+            }
+
+            // Start initialization when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
 </body>
 </html>
