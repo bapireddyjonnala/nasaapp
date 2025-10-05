@@ -30,7 +30,7 @@
         // Create Animation Controller
         window.animationController = new AnimationController();
 
-        // Create Earth Controller (NEW - replaces scene manager and gaze controller)
+        // Create Earth Controller (handles rotation and year switching)
         window.earthController = new EarthController();
 
         console.log('[Init] All controllers initialized');
@@ -115,8 +115,8 @@
 
             case 'r':
                 // Reset to first scene
-                if (window.sceneManager) {
-                    window.sceneManager.reset();
+                if (window.earthController) {
+                    window.earthController.switchYear('2000');
                 }
                 break;
 
@@ -141,22 +141,29 @@
 
             case '1':
                 // Jump to scene 2000
-                if (window.sceneManager) {
-                    window.sceneManager.switchScene('2000');
+                if (window.earthController) {
+                    window.earthController.switchYear('2000');
                 }
                 break;
 
             case '2':
-                // Jump to scene 2020
-                if (window.sceneManager) {
-                    window.sceneManager.switchScene('2020');
+                // Jump to scene 2010
+                if (window.earthController) {
+                    window.earthController.switchYear('2010');
                 }
                 break;
 
             case '3':
+                // Jump to scene 2020
+                if (window.earthController) {
+                    window.earthController.switchYear('2020');
+                }
+                break;
+
+            case '4':
                 // Jump to scene 2050
-                if (window.sceneManager) {
-                    window.sceneManager.switchScene('2050');
+                if (window.earthController) {
+                    window.earthController.switchYear('2050');
                 }
                 break;
         }
@@ -247,7 +254,7 @@
         // Show welcome message
         if (window.uiManager) {
             setTimeout(() => {
-                window.uiManager.showMessage('Welcome! Look at portals to travel through time.', 4000);
+                window.uiManager.showMessage('Drag to rotate Earth 360°. Click year buttons to time travel!', 5000);
             }, 2000);
         }
 
@@ -318,8 +325,8 @@
             window.animationController.cleanup();
         }
 
-        if (window.gazeController) {
-            window.gazeController.cleanup();
+        if (window.earthController) {
+            window.earthController.cleanup();
         }
     }
 
@@ -335,22 +342,20 @@
         debug: {
             getState: () => app,
             getConfig: () => CONFIG,
-            switchScene: (year) => window.sceneManager?.switchScene(year),
+            switchYear: (year) => window.earthController?.switchYear(year),
             playAudio: (year) => window.audioController?.playSceneAudio(year),
             showSubtitle: (text) => window.uiManager?.showSubtitle(text, 5000),
             muteAudio: () => window.audioController?.muteAll(),
             unmuteAudio: () => window.audioController?.unmuteAll(),
-            resetExperience: () => window.sceneManager?.reset(),
-            createBubbles: () => window.animationController?.createParticleEffect('bubbles'),
+            resetExperience: () => window.earthController?.switchYear('2000'),
             getHelp: () => {
                 console.log('🌊 Ocean Time Machine VR - Debug Commands:');
-                console.log('oceanVR.debug.switchScene("2000" | "2020" | "2050")');
-                console.log('oceanVR.debug.playAudio("2000" | "2020" | "2050")');
+                console.log('oceanVR.debug.switchYear("2000" | "2010" | "2020" | "2050")');
+                console.log('oceanVR.debug.playAudio("2000" | "2010" | "2020" | "2050")');
                 console.log('oceanVR.debug.showSubtitle("Your message")');
                 console.log('oceanVR.debug.muteAudio()');
                 console.log('oceanVR.debug.unmuteAudio()');
                 console.log('oceanVR.debug.resetExperience()');
-                console.log('oceanVR.debug.createBubbles()');
                 console.log('oceanVR.debug.getState()');
                 console.log('oceanVR.debug.getConfig()');
                 console.log('\nKeyboard Shortcuts:');
@@ -358,7 +363,7 @@
                 console.log('R - Reset to first scene');
                 console.log('H - Toggle high contrast');
                 console.log('I - Toggle instructions');
-                console.log('1, 2, 3 - Jump to scenes 2000, 2020, 2050');
+                console.log('1, 2, 3, 4 - Jump to scenes 2000, 2010, 2020, 2050');
             }
         }
     };
